@@ -7,6 +7,12 @@
 #include <ctime>
 #include <iostream>
 
+#include <cmath>
+#include <vector>
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 const char* vertex_shader_source = R"s(
 #version 330 core
 layout (location = 0) in vec3 aPos;
@@ -15,24 +21,12 @@ void main()
    gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
 }
 )s";
-
 const char* fragment_shader_source = R"s(
 #version 330 core
 out vec4 FragColor;
-const vec2 u_resolution = vec2(800.0, 600.0);
 void main()
 {
-    vec2 center = u_resolution / 2.0;
-
-    if (gl_FragCoord.x > center.x && gl_FragCoord.y > center.y) {
-        FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-    } else if (gl_FragCoord.x < center.x && gl_FragCoord.y > center.y) {
-        FragColor = vec4(0.0, 1.0, 0.0, 1.0);
-    } else if (gl_FragCoord.x < center.x && gl_FragCoord.y < center.y) {
-        FragColor = vec4(0.0, 0.0, 1.0, 1.0);
-    } else {
-        FragColor = vec4(1.0, 1.0, 0.0, 1.0);
-    }
+    FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 }
 )s";
 
@@ -45,10 +39,10 @@ void update(GLFWwindow* window);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
+void drawPolygonN(int N, float radius, unsigned int shaderProgram, float width, float height);
 
 int main()
 {
-    srand(static_cast<unsigned int>(time(nullptr))); // random brojevi
 
     // init
     //
@@ -118,51 +112,79 @@ int main()
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
 
-    float vertices_cubeTriangle[] = {1.0f, 1.0f, 0.0f, 1.0f, -1.0f, 0.0f, -1.0f, -1.0f, 0.0f, -1.0f, 1.0f, 0.0f};
+    int N = 6; // Podrazumevana vrednost
 
-    unsigned int indices[] = {0, 1, 3, 1, 2, 3};
+    std::cout << "Unesite broj stranica mnogougla (N >= 3): ";
+    std::cin >> N;
 
-    unsigned quadVAO = 0;
-    unsigned quadVBO = 0;
-    unsigned int EBO;
-    glGenVertexArrays(1, &quadVAO);
-    glGenBuffers(1, &quadVBO);
-    glGenBuffers(1, &EBO);
-
-    glBindVertexArray(quadVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_cubeTriangle), vertices_cubeTriangle, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glBindVertexArray(0);
+    if (N < 3)
+    {
+        N = 6; // Postavljamo neku podrazumevanu vrednost u slucaju greske
+    }
 
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(bgRed, bgGreen, bgBlue, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glUseProgram(shaderProgram);
-        glBindVertexArray(quadVAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        
+        drawPolygonN(N, 0.5f, shaderProgram, static_cast<float>(width), static_cast<float>(height));
 
         glfwPollEvents();
         update(window);
         glfwSwapBuffers(window);
     }
 
-    glDeleteVertexArrays(1, &quadVAO);
-    glDeleteBuffers(1, &quadVBO);
-    glDeleteBuffers(1, &EBO);
     glDeleteProgram(shaderProgram);
 
     // terminate
     glfwTerminate();
     return 0;
+}
+
+void drawPolygonN(int N, float radius, unsigned int shaderProgram, float windowWidth, float windowHeight)
+{
+    if (N < 3)
+        return;
+
+    float aspectRatio = windowWidth / windowHeight;
+
+    std::vector<float> vertices;
+
+    vertices.push_back(0.0f);
+    vertices.push_back(0.0f);
+    vertices.push_back(0.0f);
+
+    for (int i = 0; i <= N; ++i)
+    {
+        float angle = i * (2.0f * static_cast<float>(M_PI) / N);
+        float x = (radius * std::cos(angle)) / aspectRatio;
+        float y = radius * std::sin(angle);
+
+        vertices.push_back(x);
+        vertices.push_back(y);
+        vertices.push_back(0.0f);
+    }
+
+    unsigned int VAO, VBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glUseProgram(shaderProgram);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, static_cast<GLsizei>(vertices.size() / 3));
+
+    glBindVertexArray(0);
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
