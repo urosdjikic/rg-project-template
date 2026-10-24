@@ -41,6 +41,9 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 void drawPolygonN(int N, float radius, unsigned int shaderProgram, float width, float height);
 
+int currentN = 0;
+bool drawPolygon = false;
+
 int main()
 {
 
@@ -112,25 +115,18 @@ int main()
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
 
-    int N = 6; // Podrazumevana vrednost
-
-    std::cout << "Unesite broj stranica mnogougla (N >= 3): ";
-    std::cin >> N;
-
-    if (N < 3)
-    {
-        N = 6; // Postavljamo neku podrazumevanu vrednost u slucaju greske
-    }
-
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(bgRed, bgGreen, bgBlue, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        
-        drawPolygonN(N, 0.5f, shaderProgram, static_cast<float>(width), static_cast<float>(height));
+        if (drawPolygon && currentN >= 3)
+        {
+            int width, height;
+            glfwGetFramebufferSize(window, &width, &height);
+
+            drawPolygonN(currentN, 0.5f, shaderProgram, static_cast<float>(width), static_cast<float>(height));
+        }
 
         glfwPollEvents();
         update(window);
@@ -210,6 +206,17 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                 glfwSetWindowSize(window, width - step, height);
             if (key == GLFW_KEY_RIGHT)
                 glfwSetWindowSize(window, width + step, height);
+
+            if (key >= GLFW_KEY_3 && key <= GLFW_KEY_9)
+            {
+                currentN = key - GLFW_KEY_0;
+                drawPolygon = true;
+            }
+            else if (key >= GLFW_KEY_KP_3 && key <= GLFW_KEY_KP_9)
+            {
+                currentN = key - GLFW_KEY_KP_0;
+                drawPolygon = true;
+            }
         }
         else
         {
