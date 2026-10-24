@@ -107,23 +107,35 @@ int main()
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
 
-    float vertices_triangle[] = {
-        -0.5f, -0.5f, // v0
-        0.5f,  -0.5f, // v1
-        0.0f,  0.5f // v2
+    float vertices_cubeTriangle[] = {
+        0.5f,  0.5f,  0.0f,
+        0.5f,  -0.5f, 0.0f,
+        -0.5f, -0.5f, 0.0f,
+        -0.5f, 0.5f,  0.0f
+    };
+    
+    unsigned int indices[] = {
+        0, 1, 3,
+        1, 2, 3
     };
 
-    unsigned VAO = 0;
-    unsigned VBO = 0;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
+    unsigned quadVAO = 0;
+    unsigned quadVBO = 0;
+    unsigned int EBO;
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glGenBuffers(1, &EBO);
 
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_triangle), vertices_triangle, GL_STATIC_DRAW);
+    glBindVertexArray(quadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_cubeTriangle), vertices_cubeTriangle, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+
+    glBindVertexArray(0);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -131,16 +143,18 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(shaderProgram);
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(quadVAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
 
         glfwPollEvents();
         update(window);
         glfwSwapBuffers(window);
     }
 
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+    glDeleteVertexArrays(1, &quadVAO);
+    glDeleteBuffers(1, &quadVBO);
+    glDeleteBuffers(1, &EBO);
     glDeleteProgram(shaderProgram);
 
     // terminate
