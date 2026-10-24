@@ -19,9 +19,20 @@ void main()
 const char* fragment_shader_source = R"s(
 #version 330 core
 out vec4 FragColor;
+const vec2 u_resolution = vec2(800.0, 600.0);
 void main()
 {
-   FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    vec2 center = u_resolution / 2.0;
+
+    if (gl_FragCoord.x > center.x && gl_FragCoord.y > center.y) {
+        FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    } else if (gl_FragCoord.x < center.x && gl_FragCoord.y > center.y) {
+        FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+    } else if (gl_FragCoord.x < center.x && gl_FragCoord.y < center.y) {
+        FragColor = vec4(0.0, 0.0, 1.0, 1.0);
+    } else {
+        FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+    }
 }
 )s";
 
@@ -107,17 +118,9 @@ int main()
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
 
-    float vertices_cubeTriangle[] = {
-        0.5f,  0.5f,  0.0f,
-        0.5f,  -0.5f, 0.0f,
-        -0.5f, -0.5f, 0.0f,
-        -0.5f, 0.5f,  0.0f
-    };
-    
-    unsigned int indices[] = {
-        0, 1, 3,
-        1, 2, 3
-    };
+    float vertices_cubeTriangle[] = {1.0f, 1.0f, 0.0f, 1.0f, -1.0f, 0.0f, -1.0f, -1.0f, 0.0f, -1.0f, 1.0f, 0.0f};
+
+    unsigned int indices[] = {0, 1, 3, 1, 2, 3};
 
     unsigned quadVAO = 0;
     unsigned quadVBO = 0;
